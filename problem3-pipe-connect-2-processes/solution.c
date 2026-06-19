@@ -15,10 +15,32 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // TODO: создайте канал (pipe),
-    //       запустите CMD1 (argv[1]) так, чтобы его stdout → write-конец канала,
-    //       запустите CMD2 (argv[2]) так, чтобы его stdin  ← read-конец канала,
-    //       дождитесь завершения обоих дочерних процессов.
+    int p[2];
+    pipe(p);
+
+    pid_t p1 = fork();
+    if (p1 == 0) {
+        dup2(p[1], STDOUT_FILENO);
+        close(p[0]);
+        close(p[1]);
+        execlp(argv[1], argv[1], NULL);
+        exit(1);
+    }
+
+    pid_t p2 = fork();
+    if (p2 == 0) {
+        dup2(p[0], STDIN_FILENO);
+        close(p[0]);
+        close(p[1]);
+        execlp(argv[2], argv[2], NULL);
+        exit(1);
+    }
+
+    close(p[0]);
+    close(p[1]);
+
+    waitpid(p1, NULL, 0);
+    waitpid(p2, NULL, 0);
 
     return 0;
 }
