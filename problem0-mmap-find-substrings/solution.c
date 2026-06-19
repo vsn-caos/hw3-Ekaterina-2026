@@ -18,9 +18,45 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // TODO: откройте файл, получите его размер через fstat,
-    //       отобразите в память через mmap,
-    //       найдите все вхождения argv[2] и выведите их позиции
+    const char *filename = argv[1];
+    const char *pattern = argv[2];
+    size_t pattern_len = strlen(pattern);
+
+    int fd = open(filename, O_RDONLY);
+    if (fd < 0) {
+        perror("open");
+        return 1;
+    }
+
+    struct stat st;
+    if (fstat(fd, &st) < 0) {
+        perror("fstat");
+        close(fd);
+        return 1;
+    }
+
+    if (st.st_size == 0 || pattern_len == 0) {
+        close(fd);
+        return 0;
+    }
+
+    size_t file_size = (size_t)st.st_size;
+
+    char *data = mmap(NULL, file_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    if (data == MAP_FAILED) {
+        perror("mmap");
+        close(fd);
+        return 1;
+    }
+
+    for (size_t i = 0; i + pattern_len <= file_size; ++i) {
+        if (memcmp(data + i, pattern, pattern_len) == 0) {
+            printf("%zu\n", i);
+        }
+    }
+
+    munmap(data, file_size);
+    close(fd);
 
     return 0;
 }
