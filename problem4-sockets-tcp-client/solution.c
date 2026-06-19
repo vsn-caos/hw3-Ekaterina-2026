@@ -23,11 +23,31 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // TODO: создайте TCP-сокет (AF_INET, SOCK_STREAM),
-    //       заполните struct sockaddr_in с помощью inet_aton/inet_pton,
-    //       подключитесь через connect,
-    //       реализуйте цикл чтения/отправки/приёма/вывода чисел.
-    //       Порядок байт — Little Endian (на x86/x86_64 это нативный порядок).
+    int s = socket(AF_INET, SOCK_STREAM, 0);
+
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(atoi(argv[2]));
+    inet_pton(AF_INET, argv[1], &addr.sin_addr);
+
+    connect(s, (struct sockaddr *)&addr, sizeof(addr));
+
+    int x;
+    while (scanf("%d", &x) == 1) {
+        if (send(s, &x, 4, 0) <= 0)
+            break;
+
+        int y;
+        ssize_t r = recv(s, &y, 4, MSG_WAITALL);
+        if (r <= 0)
+            break;
+
+        printf("%d\n", y);
+        fflush(stdout);
+    }
+
+    close(s);
 
     return 0;
 }
